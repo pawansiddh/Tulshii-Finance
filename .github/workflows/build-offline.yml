@@ -1,0 +1,35 @@
+name: Build Tulshii Finance Offline Edition
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate offline builder
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/build-offline.py
+
+      - name: Build standalone offline HTML
+        run: |
+          set -euo pipefail
+          python3 tools/build-offline.py
+          test -f offline-build/PAWANRO_Finance_Lifetime_Offline_EXACT.html
+          test -s offline-build/PAWANRO_Finance_Lifetime_Offline_EXACT.html
+
+      - name: Upload offline build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tulshii-finance-offline
+          path: offline-build/PAWANRO_Finance_Lifetime_Offline_EXACT.html
+          if-no-files-found: error
+          retention-days: 14
