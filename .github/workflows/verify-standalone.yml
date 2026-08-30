@@ -1,0 +1,64 @@
+name: Verify Tulshii Finance Standalone
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify repository boundary and required files
+        run: |
+          set -euo pipefail
+          test -f index.html
+          test -f patch-loader-fast-r2.js
+          test -f finance-ui-controls-r2.js
+          test -f finance-sidebar-owner-r2.js
+          test -f finance-offline-sync-r2.js
+          test -f finance-calendar-studio-r1.js
+          test -f finance-coedit-audit-r1.js
+          test -d data
+          test -d brand-b64
+          test "$(cat CNAME)" = "finance.tulshii.com"
+          test ! -d focus
+          test ! -d finance-demo2
+
+      - name: Browser smoke test standalone root
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          cat > /tmp/tulshii-finance-smoke.html <<'EOF'
+          <!doctype html><html data-result="running"><body>
+          <iframe id="app" src="http://127.0.0.1:8765/?standalone-smoke=1" style="width:1365px;height:768px;border:0"></iframe>
+          <pre id="out">running</pre>
+          <script>
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const waitFor=async(fn,ms=25000)=>{const end=Date.now()+ms;while(Date.now()<end){try{const v=fn();if(v)return v}catch(_){}await sleep(100)}throw Error('timeout')};
+          (async()=>{const root=document.documentElement,out=document.getElementById('out'),frame=document.getElementById('app');try{
+            const w=await waitFor(()=>frame.contentWindow?.document?.documentElement?.dataset?.pvRuntimeHealth==='ok'?frame.contentWindow:null),d=w.document;
+            const req=['.sidebar','.topbar','#pvSide'];for(const s of req)if(!d.querySelector(s))throw Error('missing '+s);
+            if(d.documentElement.dataset.pvSidebarShell!=='owner-r2')throw Error('sidebar owner '+d.documentElement.dataset.pvSidebarShell);
+            if(d.getElementById('pvOfflineSyncStatus'))throw Error('sync cloud control should be hidden');
+            const report=w.__PV_BOOT_REPORT__||{};
+            root.dataset.result='pass';out.textContent=JSON.stringify({health:d.documentElement.dataset.pvRuntimeHealth,bootMs:d.documentElement.dataset.pvBootMs,sidebar:d.documentElement.dataset.pvSidebarShell,failed:report.failed||[]},null,2);
+          }catch(e){root.dataset.result='fail';out.textContent=String(e.stack||e)}})();
+          </script></body></html>
+          EOF
+          python3 -m http.server 8765 >/tmp/tulshii-finance-http.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 1
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=30000 --dump-dom file:///tmp/tulshii-finance-smoke.html >/tmp/tulshii-finance-smoke-out.html
+          cat /tmp/tulshii-finance-smoke-out.html
+          grep -q 'data-result="pass"' /tmp/tulshii-finance-smoke-out.html
+          ! grep -q 'data-result="fail"' /tmp/tulshii-finance-smoke-out.html
