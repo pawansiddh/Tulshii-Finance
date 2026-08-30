@@ -1,0 +1,5 @@
+Source snapshot: pawansiddh/pawansiddh.github.io @ 3cfebc7935a02574f0adf7f9b8b699b64225c86a
+Source path: finance-demo2/
+Migration target: repository root
+Brand target: Tulshii
+Production domain target: finance.tulshii.com
