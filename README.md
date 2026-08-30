@@ -1,7 +1,9 @@
 # Tulshii Finance
 
-Standalone Finance application repository migrated from `finance-demo2` in `pawansiddh.github.io`.
+Standalone Finance application repository migrated from `pawansiddh.github.io/finance-demo2`.
 
-Brand: **Tulshii**
+- Brand: **Tulshii**
+- Planned production domain: **finance.tulshii.com**
+- Focus remains separate from this repository.
 
-Planned production domain: **finance.tulshii.com**
+The legacy `finance-demo2` source remains untouched in the original repository as a rollback copy until this standalone application is fully verified.
