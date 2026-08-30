@@ -37,9 +37,9 @@ jobs:
           set -euo pipefail
           BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
           test -n "$BROWSER"
-          cat > /tmp/tulshii-finance-smoke.html <<'EOF'
+          cat > standalone-smoke.html <<'EOF'
           <!doctype html><html data-result="running"><body>
-          <iframe id="app" src="http://127.0.0.1:8765/?standalone-smoke=1" style="width:1365px;height:768px;border:0"></iframe>
+          <iframe id="app" src="/?standalone-smoke=1" style="width:1365px;height:768px;border:0"></iframe>
           <pre id="out">running</pre>
           <script>
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -58,7 +58,7 @@ jobs:
           PID=$!
           trap 'kill $PID || true' EXIT
           sleep 1
-          "$BROWSER" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=30000 --dump-dom file:///tmp/tulshii-finance-smoke.html >/tmp/tulshii-finance-smoke-out.html
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8765/standalone-smoke.html >/tmp/tulshii-finance-smoke-out.html
           cat /tmp/tulshii-finance-smoke-out.html
           grep -q 'data-result="pass"' /tmp/tulshii-finance-smoke-out.html
           ! grep -q 'data-result="fail"' /tmp/tulshii-finance-smoke-out.html
