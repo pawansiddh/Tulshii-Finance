@@ -20,15 +20,20 @@ jobs:
         run: |
           set -euo pipefail
           test -f index.html
+          test -f patch-loader-fast-r3.js
           test -f patch-loader-fast-r2.js
           test -f finance-ui-controls-r2.js
-          test -f finance-sidebar-owner-r2.js
-          test -f finance-offline-sync-r2.js
+          test -f finance-sidebar-owner-r3.js
+          test -f finance-offline-sync-r3.js
+          test -f sw-r3.js
           test -f finance-calendar-studio-r1.js
           test -f finance-coedit-audit-r1.js
           test -d data
-          test -d brand-b64
           test "$(cat CNAME)" = "finance.tulshii.com"
+          grep -q 'TULSHII Finance' index.html
+          grep -q 'patch-loader-fast-r3.js' index.html
+          grep -q 'tulshii-ii-wrap' finance-sidebar-owner-r3.js
+          grep -q 'tulshii-com' finance-sidebar-owner-r3.js
           test ! -d focus
           test ! -d finance-demo2
 
@@ -44,13 +49,22 @@ jobs:
           <script>
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
           const waitFor=async(fn,ms=25000)=>{const end=Date.now()+ms;while(Date.now()<end){try{const v=fn();if(v)return v}catch(_){}await sleep(100)}throw Error('timeout')};
+          const shown=el=>!!el&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().width>0&&el.getBoundingClientRect().height>0;
           (async()=>{const root=document.documentElement,out=document.getElementById('out'),frame=document.getElementById('app');try{
             const w=await waitFor(()=>frame.contentWindow?.document?.documentElement?.dataset?.pvRuntimeHealth==='ok'?frame.contentWindow:null),d=w.document;
             const req=['.sidebar','.topbar','#pvSide'];for(const s of req)if(!d.querySelector(s))throw Error('missing '+s);
-            if(d.documentElement.dataset.pvSidebarShell!=='owner-r2')throw Error('sidebar owner '+d.documentElement.dataset.pvSidebarShell);
+            if(d.documentElement.dataset.tulshiiSidebar!=='r3')throw Error('Tulshii sidebar owner not active');
             if(d.getElementById('pvOfflineSyncStatus'))throw Error('sync cloud control should be hidden');
+            const brand=d.querySelector('.sidebar .brand'),full=d.querySelector('.tulshii-brand-full'),mini=d.querySelector('.tulshii-brand-mini'),ii=d.querySelector('.tulshii-ii-wrap svg'),com=d.querySelector('.tulshii-com'),finance=d.querySelector('.tulshii-product');
+            if(!brand||!shown(full)||shown(mini)||!ii||!com||!finance)throw Error('expanded Tulshii brand incomplete');
+            if(!/TULSH/.test(full.textContent)||com.textContent.trim()!=='.com'||finance.textContent.trim()!=='FINANCE')throw Error('expanded Tulshii brand text incorrect');
+            if(/PAWANRO|PAVENRO/i.test(brand.textContent))throw Error('legacy brand visible');
+            d.body.classList.add('pv-rail');w.TulshiiSidebar?.refresh();await sleep(120);
+            if(shown(d.querySelector('.tulshii-brand-full'))||!shown(d.querySelector('.tulshii-brand-mini'))||!d.querySelector('.tulshii-brand-mini svg'))throw Error('collapsed Tulshii ii mark incorrect');
+            d.body.classList.remove('pv-rail');w.TulshiiSidebar?.refresh();await sleep(120);
+            if(!shown(d.querySelector('.tulshii-brand-full')))throw Error('expanded brand did not restore');
             const report=w.__PV_BOOT_REPORT__||{};
-            root.dataset.result='pass';out.textContent=JSON.stringify({health:d.documentElement.dataset.pvRuntimeHealth,bootMs:d.documentElement.dataset.pvBootMs,sidebar:d.documentElement.dataset.pvSidebarShell,failed:report.failed||[]},null,2);
+            root.dataset.result='pass';out.textContent=JSON.stringify({health:d.documentElement.dataset.pvRuntimeHealth,bootMs:d.documentElement.dataset.pvBootMs,tulshiiSidebar:d.documentElement.dataset.tulshiiSidebar,expanded:'TULSH + ii/.com | FINANCE',collapsed:'ii only',failed:report.failed||[]},null,2);
           }catch(e){root.dataset.result='fail';out.textContent=String(e.stack||e)}})();
           </script></body></html>
           EOF
