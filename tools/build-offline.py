@@ -48,8 +48,11 @@ def style_tag(css,label): return f'\n<style data-pawanro-bundled="{label}">\n{cs
 def delayed_scripts(items,delay=120):
     payload=[]
     for label,code in items:
-        code=runtime_policy(label,code);payload.append([label,base64.b64encode(code.encode()).decode('ascii')])
-    js="(()=>{const P="+json.dumps(payload,separators=(',',':'))+f";setTimeout(()=>{{for(const [n,b] of P){{const s=document.createElement('script');s.textContent=atob(b)+'\\n//# sourceURL=pawanro-offline-'+n+'.js';document.documentElement.appendChild(s);s.remove();}}document.documentElement.classList.remove('pv-offline-booting');}}, {delay});}})();"
+        code=runtime_policy(label,code);payload.append([label,base64.b64encode(code.encode('utf-8')).decode('ascii')])
+    # IMPORTANT: atob() returns a Latin-1-like binary string. Assigning it directly to
+    # script.textContent corrupts UTF-8 characters such as · × ▶ ☀ and arrows. Decode
+    # the base64 bytes back through TextDecoder before evaluating each bundled script.
+    js="(()=>{const P="+json.dumps(payload,separators=(',',':'))+f";setTimeout(()=>{{for(const [n,b] of P){{const bin=atob(b),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);const s=document.createElement('script');s.textContent=new TextDecoder('utf-8').decode(u)+'\\n//# sourceURL=pawanro-offline-'+n+'.js';document.documentElement.appendChild(s);s.remove();}}document.documentElement.classList.remove('pv-offline-booting');}}, {delay});}})();"
     return script_tag(js,'phase-loader')
 
 html=unpack_parts('data',10)
