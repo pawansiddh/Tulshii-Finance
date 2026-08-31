@@ -11,6 +11,9 @@ try{
  // Compatibility with the existing consolidated health monitor only.
  document.documentElement.dataset.pvSidebarShell='owner-r2';
  await load('patch-loader-fast-r2.js?v=tulshii-finance-runtime-r1-20260830');
+ // Phase 1 Decision System: deterministic calculations first; Prem and AA remain future adapters.
+ await load('finance-decision-engine-r1.js?v=tulshii-phase1-decision-r1-20260831');
+ await load('finance-decision-center-r1.js?v=tulshii-phase1-decision-r1-20260831');
 }catch(error){
  console.error('TULSHII Finance bootstrap failed',error);
  document.documentElement.classList.remove('pv-demo2-booting');
